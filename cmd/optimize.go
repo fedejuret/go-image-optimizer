@@ -14,11 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type File struct {
-	name     string
-	location string
-}
-
 // optimizeCmd represents the optimize command
 var optimizeCmd = &cobra.Command{
 	Use:   "optimize",
@@ -82,7 +77,7 @@ func imageProcessing(buffer []byte, fileName string, quality int, path string) (
 	fileType := bimg.DetermineImageType(buffer)
 	fileTypeString := bimg.DetermineImageTypeName(buffer)
 
-	filename := fileName + "_COMPRESSED." + fileTypeString
+	filename := fileName + "." + fileTypeString
 
 	converted, err := bimg.NewImage(buffer).Convert(fileType)
 	if err != nil {
