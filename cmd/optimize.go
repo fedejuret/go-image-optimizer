@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/h2non/bimg"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +25,8 @@ var optimizeCmd = &cobra.Command{
 	Short: "Optimize the images in this images directory",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		folder, errFolder := cmd.Flags().GetString("folder")
-
-		if errFolder != nil {
-			folder = "."
-		}
+		folder, _ := cmd.Flags().GetString("folder")
+		quality, _ := cmd.Flags().GetInt("quality")
 
 		dir, err := os.Getwd()
 
@@ -41,20 +37,27 @@ var optimizeCmd = &cobra.Command{
 		if folder == "." {
 			folder = ""
 		} else {
-			folder = "\\" + folder
+			folder = "/" + folder
 		}
 
 		folder = dir + folder
+
+		println(folder)
 
 		filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 			if err == nil {
 
 				if !info.IsDir() {
-					buffer, _ := os.ReadFile(info.Name())
-					imageProcessing(buffer, 50, path)
+					if !strings.Contains(info.Name(), "_COMPRESSED") {
+						buffer, _ := os.ReadFile(path)
+						finalPath := path[:strings.Index(path, info.Name())]
+						_, err := imageProcessing(buffer, info.Name(), quality, finalPath)
 
+						if err != nil {
+							panic(err)
+						}
+					}
 				}
-
 			}
 			return nil
 		})
@@ -74,10 +77,14 @@ func createFolder(dirname string) error {
 }
 
 // The mime type of the image is changed, it is compressed and then saved in the specified folder.
-func imageProcessing(buffer []byte, quality int, dirname string) (string, error) {
-	filename := strings.Replace(uuid.New().String(), "-", "", -1) + ".webp"
+func imageProcessing(buffer []byte, fileName string, quality int, path string) (string, error) {
 
-	converted, err := bimg.NewImage(buffer).Convert(bimg.WEBP)
+	fileType := bimg.DetermineImageType(buffer)
+	fileTypeString := bimg.DetermineImageTypeName(buffer)
+
+	filename := fileName + "_COMPRESSED." + fileTypeString
+
+	converted, err := bimg.NewImage(buffer).Convert(fileType)
 	if err != nil {
 		return filename, err
 	}
@@ -87,7 +94,13 @@ func imageProcessing(buffer []byte, quality int, dirname string) (string, error)
 		return filename, err
 	}
 
-	writeError := bimg.Write(fmt.Sprintf("./"+dirname+"/%s", filename), processed)
+	errorCreate := createFolder(path + "/COMPRESSED")
+
+	if errorCreate != nil {
+		return fileName, errorCreate
+	}
+
+	writeError := bimg.Write(fmt.Sprintf(path+"/COMPRESSED/%s", filename), processed)
 	if writeError != nil {
 		return filename, writeError
 	}
@@ -98,6 +111,6 @@ func imageProcessing(buffer []byte, quality int, dirname string) (string, error)
 func init() {
 	rootCmd.AddCommand(optimizeCmd)
 
-	optimizeCmd.Flags().StringP("folder", "f", "", "specify the folder that you want to optimize")
-	optimizeCmd.Flags().StringP("exclude-folders", "", "", "exclude folders")
+	optimizeCmd.Flags().StringP("folder", "f", ".", "specify the folder that you want to optimize")
+	optimizeCmd.Flags().IntP("quality", "q", 50, "quality of final image")
 }
