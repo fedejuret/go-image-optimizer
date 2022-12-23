@@ -14,7 +14,7 @@ import (
 // deleteCompressedCmd represents the deleteCompressed command
 var deleteCompressedCmd = &cobra.Command{
 	Use:   "delete-compressed",
-	Short: "A brief description of your command",
+	Short: "Delete all previously compressed images",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		folder, _ := cmd.Flags().GetString("folder")
@@ -53,16 +53,6 @@ var deleteCompressedCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(deleteCompressedCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCompressedCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCompressedCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	deleteCompressedCmd.Flags().StringP("folder", "f", ".", "Specify the folder that you want to delete")
 }
