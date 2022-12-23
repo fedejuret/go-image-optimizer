@@ -38,6 +38,17 @@ var optimizeCmd = &cobra.Command{
 
 		folder = dir + folder
 
+		total := fileCount(folder)
+		totalSuccess := 0
+
+		message := fmt.Sprintf(`
+			======================================
+				TOTAL FILES TO COMPRESS: %v
+			======================================
+		`, total)
+
+		println(message)
+
 		filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 			if err == nil {
 
@@ -58,11 +69,19 @@ var optimizeCmd = &cobra.Command{
 						if err != nil {
 							panic(err)
 						}
+
+						totalSuccess++
 					}
 				}
 			}
 			return nil
 		})
+		message = fmt.Sprintf(`
+			======================================
+				SUCCESS COMPRESSED FILES: %v
+			======================================
+		`, totalSuccess)
+		println(message)
 	},
 }
 
@@ -70,6 +89,9 @@ var optimizeCmd = &cobra.Command{
 func createFolder(dirname string) error {
 	_, err := os.Stat(dirname)
 	if os.IsNotExist(err) {
+
+		println("Creating COMPRESSED folder in: " + dirname)
+
 		errDir := os.MkdirAll(dirname, 0755)
 		if errDir != nil {
 			return errDir
@@ -96,7 +118,7 @@ func imageProcessing(buffer []byte, fileName string, quality int, path string) (
 		return filename, err
 	}
 
-	errorCreate := createFolder(path + "/COMPRESSED")
+	errorCreate := createFolder(path + "COMPRESSED")
 
 	if errorCreate != nil {
 		return fileName, errorCreate
@@ -116,4 +138,24 @@ func init() {
 	optimizeCmd.Flags().StringP("folder", "f", ".", "Specify the folder that you want to optimize")
 	optimizeCmd.Flags().IntP("quality", "q", 50, "Quality of final image")
 	optimizeCmd.Flags().BoolP("delete-old", "", false, "Delete previously compressed images")
+}
+
+func fileCount(path string) int {
+	total := 0
+
+	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err == nil {
+
+			finalPath := path[:strings.Index(path, info.Name())]
+			inFolderName := strings.Split(finalPath, "/")
+			lastFolderName := inFolderName[len(inFolderName)-2]
+
+			if !info.IsDir() && lastFolderName != "COMPRESSED" {
+				total++
+			}
+		}
+		return nil
+	})
+
+	return total
 }
