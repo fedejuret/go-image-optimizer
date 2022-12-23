@@ -22,6 +22,7 @@ var optimizeCmd = &cobra.Command{
 
 		folder, _ := cmd.Flags().GetString("folder")
 		quality, _ := cmd.Flags().GetInt("quality")
+		deleteOld, _ := cmd.Flags().GetBool("delete-old")
 
 		dir, err := os.Getwd()
 
@@ -37,15 +38,21 @@ var optimizeCmd = &cobra.Command{
 
 		folder = dir + folder
 
-		println(folder)
-
 		filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
 			if err == nil {
 
+				if info.IsDir() && info.Name() == "COMPRESSED" && deleteOld {
+					os.Remove(path)
+				}
+
 				if !info.IsDir() {
-					if !strings.Contains(info.Name(), "_COMPRESSED") {
-						buffer, _ := os.ReadFile(path)
-						finalPath := path[:strings.Index(path, info.Name())]
+					buffer, _ := os.ReadFile(path)
+					finalPath := path[:strings.Index(path, info.Name())]
+					inFolderName := strings.Split(finalPath, "/")
+					lastFolderName := inFolderName[len(inFolderName)-2]
+
+					if lastFolderName != "COMPRESSED" {
+
 						_, err := imageProcessing(buffer, info.Name(), quality, finalPath)
 
 						if err != nil {
@@ -106,6 +113,7 @@ func imageProcessing(buffer []byte, fileName string, quality int, path string) (
 func init() {
 	rootCmd.AddCommand(optimizeCmd)
 
-	optimizeCmd.Flags().StringP("folder", "f", ".", "specify the folder that you want to optimize")
-	optimizeCmd.Flags().IntP("quality", "q", 50, "quality of final image")
+	optimizeCmd.Flags().StringP("folder", "f", ".", "Specify the folder that you want to optimize")
+	optimizeCmd.Flags().IntP("quality", "q", 50, "Quality of final image")
+	optimizeCmd.Flags().BoolP("delete-old", "", false, "Delete previously compressed images")
 }
