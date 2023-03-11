@@ -14,6 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	rootCmd.AddCommand(optimizeCmd)
+
+	optimizeCmd.Flags().StringP("folder", "f", ".", "Specify the folder that you want to optimize")
+	optimizeCmd.Flags().IntP("quality", "q", 50, "Quality of final image")
+	optimizeCmd.Flags().BoolP("delete-old", "", false, "Delete previously compressed images")
+}
+
 // optimizeCmd represents the optimize command
 var optimizeCmd = &cobra.Command{
 	Use:   "optimize",
@@ -56,7 +64,7 @@ var optimizeCmd = &cobra.Command{
 					os.Remove(path)
 				}
 
-				if !info.IsDir() {
+				if !info.IsDir() && isAvailableExt(path) {
 					buffer, _ := os.ReadFile(path)
 					finalPath := path[:strings.Index(path, info.Name())]
 					inFolderName := strings.Split(finalPath, "/")
@@ -132,19 +140,11 @@ func imageProcessing(buffer []byte, fileName string, quality int, path string) (
 	return filename, nil
 }
 
-func init() {
-	rootCmd.AddCommand(optimizeCmd)
-
-	optimizeCmd.Flags().StringP("folder", "f", ".", "Specify the folder that you want to optimize")
-	optimizeCmd.Flags().IntP("quality", "q", 50, "Quality of final image")
-	optimizeCmd.Flags().BoolP("delete-old", "", false, "Delete previously compressed images")
-}
-
 func fileCount(path string) int {
 	total := 0
 
 	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err == nil {
+		if err == nil && isAvailableExt(path) {
 
 			finalPath := path[:strings.Index(path, info.Name())]
 			inFolderName := strings.Split(finalPath, "/")
@@ -158,4 +158,17 @@ func fileCount(path string) int {
 	})
 
 	return total
+}
+
+func isAvailableExt(path string) bool {
+
+	available := []string{".png", ".jpg", ".jpeg"}
+	for _, i := range available {
+		if i == strings.ToLower(filepath.Ext(path)) {
+			return true
+		}
+
+	}
+
+	return false
 }

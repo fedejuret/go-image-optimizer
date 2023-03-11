@@ -33,22 +33,25 @@ var deleteCompressedCmd = &cobra.Command{
 
 		folder = dir + folder
 
-		filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-			if err == nil {
-
-				if info.Name() == "COMPRESSED" && info.IsDir() {
-					err := os.RemoveAll(path)
-
-					if err != nil {
-						panic(err)
-					}
-				}
-
-			}
-			return nil
-		})
-
+		go deleteFiles(folder)
 	},
+}
+
+func deleteFiles(folder string) {
+	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+		if err == nil {
+
+			if info.Name() == "COMPRESSED" && info.IsDir() {
+				err := os.RemoveAll(path)
+
+				if err != nil {
+					panic(err)
+				}
+			}
+
+		}
+		return nil
+	})
 }
 
 func init() {
